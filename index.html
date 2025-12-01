@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Karim Photo Editor — Watermark & KC Logo</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8}
+    *{box-sizing:border-box}
+    body{font-family:Inter, 'Noto Sans Bengali', Arial, sans-serif; margin:0; background:linear-gradient(180deg,#071226 0%, #071421 100%); color:#e6eef6; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:28px}
+    .app{width:100%; max-width:980px}
+    header{display:flex; align-items:center; gap:12px; margin-bottom:18px}
+    header h1{font-size:20px; margin:0}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); border-radius:12px; padding:18px; box-shadow:0 6px 24px rgba(2,6,23,0.6)}
+    .grid{display:grid; grid-template-columns:360px 1fr; gap:16px}
+    .controls{padding:8px}
+    label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+    input[type=file]{display:block}
+    .row{display:flex; gap:8px; align-items:center; margin-bottom:10px}
+    input[type=text], select{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:inherit}
+    .small{font-size:13px}
+    .preview{display:flex; flex-direction:column; align-items:center; gap:12px}
+    .canvas-wrap{background:#081426; border-radius:8px; padding:10px; display:flex; align-items:center; justify-content:center; min-height:320px}
+    canvas{max-width:100%; height:auto; border-radius:6px}
+    .btn{background:var(--accent); color:#012; padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:700}
+    .btn.secondary{background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04)}
+    .controls .help{font-size:12px; color:var(--muted); margin-top:6px}
+    .footer{display:flex; gap:8px; margin-top:12px}
+    .meta{font-size:12px; color:var(--muted)}
+    .flex-between{display:flex; justify-content:space-between; align-items:center}
+    @media(max-width:900px){.grid{grid-template-columns:1fr;}.card{padding:12px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect rx='8' width='36' height='36' fill='%2306b6d4'/><text x='50%' y='55%' font-size='18' font-family='Arial' font-weight='700' fill='%23001212' text-anchor='middle'>K</text></svg>" alt="logo" style="width:38px;height:38px;border-radius:8px;">
+      <h1>Karim Photo Editor — জলছাপ ও KC লোগো</h1>
+    </header>
+
+    <div class="card grid">
+      <div class="controls">
+        <label>১) ছবি নির্বাচন করুন</label>
+        <input id="fileInput" type="file" accept="image/*">
+        <div class="row">
+          <button id="btnLoadSample" class="btn secondary">ডেমো ইমেজ লোড করুন</button>
+        </div>
+
+        <hr style="opacity:0.06;margin:10px 0">
+
+        <label>২) ওয়াটারমার্ক লেখা (বাংলা/English)</label>
+        <input id="wmText" type="text" placeholder="Watermark text (উদাহরণ: Karim, © 2025)" value="+880176****687">
+
+        <div class="row">
+          <div style="flex:1">
+            <label class="small">ফন্ট সাইজ</label>
+            <input id="fontSize" type="range" min="20" max="240" value="80">
+          </div>
+          <div style="width:110px">
+            <label class="small">পর্দা/Opacity</label>
+            <input id="opacity" type="range" min="0" max="100" value="18">
+          </div>
+        </div>
+
+        <div class="row">
+          <div style="flex:1">
+            <label class="small">ফন্ট নির্বাচন</label>
+            <select id="fontSelect">
+              <option value="Noto Sans Bengali, sans-serif">Noto Sans Bengali</option>
+              <option value="Inter, sans-serif" selected>Inter (English friendly)</option>
+              <option value="" >System Default</option>
+            </select>
+          </div>
+          <div style="width:120px">
+            <label class="small">রিপিট সংখ্যা</label>
+            <input id="repeatCount" type="number" min="1" max="3" value="3" style="width:100%; padding:8px; border-radius:6px; background:transparent; border:1px solid rgba(255,255,255,0.04)">
+          </div>
+        </div>
+
+        <hr style="opacity:0.06;margin:10px 0">
+
+        <label>৩) KC লোগো সেটিংস</label>
+        <div class="row">
+          <label class="small" style="flex:1">লোগোর সাইজ (Canvas অনুপাত অনুযায়ী)</label>
+          <input id="kcSize" type="range" min="40" max="300" value="120" style="width:120px">
+        </div>
+
+        <div class="row">
+          <label class="small" style="flex:1">লোগো অপাসিটি</label>
+          <input id="kcOpacity" type="range" min="0" max="100" value="95" style="width:120px">
+        </div>
+
+        <div class="help">Orientation অনুযায়ী ওয়াটারমার্ক ভিন্নভাবে বসবে — Vertical হলে উলম্ব, Horizontal হলে আড়াআড়ি।</div>
+
+        <div class="footer">
+          <button id="applyBtn" class="btn">অ্যাপ্লাই করুন (Preview)</button>
+          <button id="downloadBtn" class="btn">ডাউনলোড (PNG)</button>
+        </div>
+
+        <p class="meta">প্রোজেক্ট: ক্লায়েন্ট-সাইড-only — কোনো ব্যাকএন্ড নেই।</p>
+      </div>
+
+      <div class="preview">
+        <div class="canvas-wrap card">
+          <canvas id="previewCanvas" width="800" height="600"></canvas>
+        </div>
+        <div class="flex-between" style="width:100%">
+          <div class="meta">প্রিভিউ: স্ক্রিন-সাইজ অনুযায়ী দেখাচ্ছে — ডাউনলোড হলে মূল রেজুলেশনটি রক্ষা করবে।</div>
+          <div class="meta">ফাইল সাইজ/রিজল্যুশন বড় হলে ব্রাউজার স্মৃতি বেশি নেবে।</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+// Helper: load image as HTMLImageElement with natural size
+function loadImageFromFile(file){
+  return new Promise((res, rej)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror = (e)=>{ URL.revokeObjectURL(url); rej(e); };
+    img.src = url;
+  });
+}
+
+const fileInput = document.getElementById('fileInput');
+const previewCanvas = document.getElementById('previewCanvas');
+const ctx = previewCanvas.getContext('2d');
+let currentImage = null; // HTMLImageElement
+let naturalW = 0, naturalH = 0;
+
+// Elements
+const wmText = document.getElementById('wmText');
+const fontSize = document.getElementById('fontSize');
+const opacity = document.getElementById('opacity');
+const fontSelect = document.getElementById('fontSelect');
+const repeatCount = document.getElementById('repeatCount');
+const kcSize = document.getElementById('kcSize');
+const kcOpacity = document.getElementById('kcOpacity');
+const applyBtn = document.getElementById('applyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const btnLoadSample = document.getElementById('btnLoadSample');
+
+btnLoadSample.addEventListener('click', async ()=>{
+  // small sample image embedded (data URL) to ease testing
+  const sample = new Image();
+  sample.crossOrigin = 'anonymous';
+  sample.src = 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1600&auto=format&fit=crop&q=80';
+  sample.onload = ()=>{ setImage(sample); };
+});
+
+fileInput.addEventListener('change', async (e)=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  try{
+    const img = await loadImageFromFile(f);
+    setImage(img);
+  }catch(err){ alert('ইমেজ লোডিংয়ে সমস্যা: ' + err);
+  }
+});
+
+function setImage(img){
+  currentImage = img;
+  naturalW = img.naturalWidth || img.width;
+  naturalH = img.naturalHeight || img.height;
+  // set canvas preview to a reasonable size while keeping aspect
+  const maxPreviewW = 880; const maxPreviewH = 600;
+  let w = naturalW, h = naturalH;
+  const ratio = Math.min(maxPreviewW / w, maxPreviewH / h, 1);
+  previewCanvas.width = Math.round(w * ratio);
+  previewCanvas.height = Math.round(h * ratio);
+  drawPreview();
+}
+
+function applyWatermarksToCanvas(canvas, image, options){
+  // canvas size should be desired export size (we'll often pass naturalW/naturalH)
+  const c = canvas; const cctx = c.getContext('2d');
+  // clear
+  cctx.clearRect(0,0,c.width,c.height);
+  // draw image fitting full canvas
+  cctx.drawImage(image, 0, 0, c.width, c.height);
+
+  const isVertical = (c.height > c.width);
+  // watermark settings
+  const text = options.text || 'Karim';
+  const font = options.font || 'Inter, sans-serif';
+  const baseSize = options.fontSize || 80;
+  const alpha = (options.opacity||18)/100;
+  const repeats = Math.max(1, options.repeats||3);
+
+  cctx.save();
+  cctx.globalAlpha = alpha;
+  cctx.textAlign = 'center';
+  cctx.textBaseline = 'middle';
+  cctx.fillStyle = '#ffffff';
+
+  // determine spacing and orientation
+  if(isVertical){
+    // draw vertical columns of watermark text
+    const colCount = repeats;
+    const spacingY = c.height / (Math.max(4, Math.round(c.height / (baseSize*1.4))));
+    const fontPx = Math.round(baseSize * (c.width/800));
+    for(let col=0; col<colCount; col++){
+      const x = Math.round((c.width/(colCount+1))*(col+1));
+      // draw multiple along Y
+      for(let y = -spacingY; y < c.height + spacingY; y += spacingY*2){
+        drawTextWithShadow(cctx, text, x, y, fontPx*0.9, font);
+      }
+    }
+  } else {
+    // horizontal / diagonal style
+    const rowCount = repeats;
+    const spacingX = c.width / (Math.max(4, Math.round(c.width / (baseSize*2))));
+    const fontPx = Math.round(baseSize * (c.height/600));
+    // we'll rotate a little to get diagonal 'কোনাকুনি' look
+    const angle = -16 * Math.PI/180;
+    cctx.translate(c.width/2, c.height/2);
+    cctx.rotate(angle);
+    for(let row=-rowCount; row<=rowCount; row++){
+      const y = row * spacingX * 1.6;
+      for(let x = -c.width; x < c.width*2; x += spacingX*2){
+        drawTextWithShadow(cctx, text, x, y, fontPx, font);
+      }
+    }
+    cctx.setTransform(1,0,0,1,0,0); // reset transform
+  }
+  cctx.restore();
+
+  // Draw KC logo at top-right corner (with simple 3D-like effect)
+  drawKCLogo(cctx, c.width, c.height, options.kcSize || 120, (options.kcOpacity||95)/100);
+}
+
+function drawTextWithShadow(cctx, text, x, y, sizePx, fontFamily){
+  cctx.save();
+  cctx.font = `${sizePx}px ${fontFamily}`;
+  // subtle emboss effect by drawing darker shadow then lighter top
+  cctx.fillStyle = 'rgba(0,0,0,0.25)';
+  cctx.fillText(text, x+2, y+2);
+  cctx.fillStyle = 'rgba(255,255,255,0.9)';
+  cctx.fillText(text, x, y);
+  cctx.restore();
+}
+
+function drawKCLogo(cctx, canvasW, canvasH, targetSize, opacityVal){
+  // targetSize is px width of logo
+  const margin = Math.round(targetSize * 0.15);
+  const x = canvasW - targetSize - margin;
+  const y = margin;
+  // create a small offscreen canvas to draw logo at high resolution then stamp
+  const off = document.createElement('canvas');
+  const dpr = 2; // make it crisper
+  off.width = Math.round(targetSize * dpr);
+  off.height = Math.round(targetSize * dpr);
+  const octx = off.getContext('2d');
+  octx.clearRect(0,0,off.width,off.height);
+  // background circle subtle
+  const center = off.width/2;
+  const r = off.width/2;
+  // gradient
+  const g = octx.createLinearGradient(0,0,off.width,off.height);
+  g.addColorStop(0, '#0ea5b8');
+  g.addColorStop(1, '#0369a1');
+  octx.fillStyle = g;
+  octx.beginPath(); octx.arc(center, center, r, 0, Math.PI*2); octx.fill();
+
+  // 3D-ish text: draw offset dark then light highlight
+  octx.font = `${Math.round(off.width*0.55)}px Inter, sans-serif`;
+  octx.textAlign = 'center'; octx.textBaseline = 'middle';
+  // dark shadow offset
+  octx.fillStyle = 'rgba(0,0,0,0.35)';
+  octx.fillText('KC', center+2, center+4);
+  // main
+  octx.fillStyle = '#fff';
+  octx.fillText('KC', center, center);
+  // small top highlight
+  octx.strokeStyle = 'rgba(255,255,255,0.2)';
+  octx.lineWidth = Math.max(1, off.width*0.02);
+  octx.strokeText('KC', center, center);
+
+  // stamp onto main canvas
+  cctx.save();
+  cctx.globalAlpha = opacityVal;
+  cctx.drawImage(off, 0,0, off.width, off.height, x, y, targetSize, targetSize);
+  cctx.restore();
+}
+
+function drawPreview(){
+  if(!currentImage) {
+    // clear canvas with placeholder
+    ctx.clearRect(0,0,previewCanvas.width, previewCanvas.height);
+    ctx.fillStyle = '#071223'; ctx.fillRect(0,0,previewCanvas.width, previewCanvas.height);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.font = '16px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('আপনার ছবি এখানে প্রদর্শিত হবে', previewCanvas.width/2, previewCanvas.height/2);
+    return;
+  }
+  // render export-size preview on the visible canvas (scaled)
+  // create a temporary canvas sized to original then scale down for preview
+  const tmp = document.createElement('canvas');
+  tmp.width = naturalW; tmp.height = naturalH;
+  applyWatermarksToCanvas(tmp, currentImage, {
+    text: wmText.value,
+    font: fontSelect.value,
+    fontSize: Number(fontSize.value),
+    opacity: Number(opacity.value),
+    repeats: Number(repeatCount.value),
+    kcSize: Number(kcSize.value),
+    kcOpacity: Number(kcOpacity.value)
+  });
+  // draw scaled-down to visible preview canvas
+  ctx.clearRect(0,0, previewCanvas.width, previewCanvas.height);
+  ctx.drawImage(tmp, 0,0, tmp.width, tmp.height, 0,0, previewCanvas.width, previewCanvas.height);
+}
+
+applyBtn.addEventListener('click', ()=>{
+  if(!currentImage) return alert('দয়া করে আগে ছবি নির্বাচন করুন।');
+  drawPreview();
+});
+
+// Auto apply on parameter change for quicker feedback
+[wmText, fontSize, opacity, fontSelect, repeatCount, kcSize, kcOpacity].forEach(el=>el.addEventListener('input', ()=>{ if(currentImage) drawPreview(); }));
+
+// Download: create a canvas at natural size + apply then download
+downloadBtn.addEventListener('click', ()=>{
+  if(!currentImage) return alert('দয়া করে আগে ছবি নির্বাচন করুন।');
+  // create final canvas at natural size
+  const final = document.createElement('canvas');
+  final.width = naturalW;
+  final.height = naturalH;
+  applyWatermarksToCanvas(final, currentImage, {
+    text: wmText.value,
+    font: fontSelect.value,
+    fontSize: Number(fontSize.value),
+    opacity: Number(opacity.value),
+    repeats: Number(repeatCount.value),
+    kcSize: Math.round(Number(kcSize.value) * (naturalW / previewCanvas.width)),
+    kcOpacity: Number(kcOpacity.value)
+  });
+  // convert to blob to avoid data URL memory overhead
+  final.toBlob(function(blob){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'karim_edited.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+  }, 'image/png');
+});
+
+// initial empty draw
+drawPreview();
+</script>
+</body>
+</html>
